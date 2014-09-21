@@ -500,6 +500,9 @@ void create_csv_datei_zus(char* recvDatei, char* sendDatei, char* csvDatei) {
 
                         } else {
 
+                            fprintf(f, "...;...;...;...;...;...;...;...;...;...;...;...\n");
+                            fflush(f);
+
                             timespec2str(timestr1, timestr_size, &last_ph.recv_time);
                             timespec2str(timestr2, timestr_size, &last_ph.send_time);
                             fprintf(f, "%s;%d;%d;%d;%d;%d;%d;%d;%d;%d;%s;%s\n",
@@ -573,6 +576,9 @@ void create_csv_datei_zus(char* recvDatei, char* sendDatei, char* csvDatei) {
                                 && last_ph.paket_id == (ph_send.paket_id - 1)) {
 
                         } else {
+
+                            fprintf(f, "...;...;...;...;...;...;...;...;...;...;...;...\n");
+                            fflush(f);
 
                             timespec2str(timestr1, timestr_size, &last_ph.recv_time);
                             timespec2str(timestr2, timestr_size, &last_ph.send_time);
@@ -652,6 +658,9 @@ void create_csv_datei_zus(char* recvDatei, char* sendDatei, char* csvDatei) {
 
                         } else {
 
+                            fprintf(f, "...;...;...;...;...;...;...;...;...;...;...;...\n");
+                            fflush(f);
+
                             timespec2str(timestr1, timestr_size, &last_ph.recv_time);
                             timespec2str(timestr2, timestr_size, &last_ph.send_time);
                             fprintf(f, "%s;%d;%d;%d;%d;%d;%d;%d;%d;%d;%s;%s\n",
@@ -725,6 +734,9 @@ void create_csv_datei_zus(char* recvDatei, char* sendDatei, char* csvDatei) {
                                 && last_ph.paket_id == (ph_send.paket_id - 1)) {
 
                         } else {
+
+                            fprintf(f, "...;...;...;...;...;...;...;...;...;...;...;...\n");
+                            fflush(f);
 
                             timespec2str(timestr1, timestr_size, &last_ph.recv_time);
                             timespec2str(timestr2, timestr_size, &last_ph.send_time);
@@ -802,6 +814,9 @@ void create_csv_datei_zus(char* recvDatei, char* sendDatei, char* csvDatei) {
 
                             } else {
 
+                                fprintf(f, "...;...;...;...;...;...;...;...;...;...;...;...\n");
+                                fflush(f);
+
                                 timespec2str(timestr1, timestr_size, &last_ph.recv_time);
                                 timespec2str(timestr2, timestr_size, &last_ph.send_time);
                                 fprintf(f, "%s;%d;%d;%d;%d;%d;%d;%d;%d;%d;%s;%s\n",
@@ -875,6 +890,9 @@ void create_csv_datei_zus(char* recvDatei, char* sendDatei, char* csvDatei) {
                                     && last_ph.paket_id == (ph_send.paket_id - 1)) {
 
                             } else {
+
+                                fprintf(f, "...;...;...;...;...;...;...;...;...;...;...;...\n");
+                                fflush(f);
 
                                 timespec2str(timestr1, timestr_size, &last_ph.recv_time);
                                 timespec2str(timestr2, timestr_size, &last_ph.send_time);
