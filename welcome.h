@@ -8,19 +8,21 @@
 #define	_welcome_H
 
 struct paket_header {
-    //    int token;
     int train_id;
-    int train_send_countid;
+    int retransfer_train_id;
     int paket_id;
     int count_pakets_in_train;
     int recv_data_rate; // Bytes per Sek
 
-    int recv_timeout_wait;
-
     int last_recv_train_id;
     int last_recv_train_send_countid;
     int last_recv_paket_id;
+    
+    int last_paket_recv_bytes;
 
+    int timeout_time_tv_sec;
+    int timeout_time_tv_usec;
+    
     struct timespec recv_time;
     struct timespec send_time;
 };
