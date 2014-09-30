@@ -24,7 +24,7 @@ struct paket_header {
     int timeout_time_tv_sec;
     int timeout_time_tv_usec;
 
-    double rrt;
+    double rtt;
 
     struct timespec recv_time;
     struct timespec send_time;

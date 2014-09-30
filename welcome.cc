@@ -56,7 +56,7 @@ bool istInDateiListe(char *datei) {
     return false;
 }
 
-char firstlines[] = "train_id;retransfer_train_id;paket_id;count_pakets_in_train;recv_data_rate;last_recv_train_id;last_recv_train_send_countid;last_recv_paket_id;last_recv_paket_bytes;timeout_time_tv_sec;timeout_time_tv_usec;recv_time;send_time;rtt\n\n\n";
+char firstlines[] = "train_id;retransfer_train_id;paket_id;count_pakets_in_train;recv_data_rate;last_recv_train_id;last_recv_retransfer_train_id;last_recv_paket_id;last_recv_paket_bytes;timeout_time_tv_sec;timeout_time_tv_usec;recv_time;send_time;rtt\n\n\n";
 
 char recv_str[] = "recv";
 char send_str[] = "send";
@@ -95,7 +95,7 @@ void log_zeile(FILE *f, char *recv_send_str, paket_header ph) {
             ph.send_time.tv_sec,
             ph.send_time.tv_nsec,
 
-            ph.rrt
+            ph.rtt
 
             );
 
@@ -132,6 +132,7 @@ void create_csv_datei(char* recvDatei, char* sendDatei, char* csvDatei) {
     int buf_size = strlen(firstlines);
     char buf[buf_size];
     int readed = read(File_Deskriptor_send, buf, buf_size);
+
     if (0 != strncmp(firstlines, buf, buf_size)) {
         printf("ERROR:\n  firstlines von der Datei \"%s\" \n(%s)\n ", sendDatei, strerror(errno));
         printf("\n %s \n %s \n", firstlines, buf);
@@ -154,7 +155,7 @@ void create_csv_datei(char* recvDatei, char* sendDatei, char* csvDatei) {
     }
 
     FILE *f = fdopen(File_Deskriptor, "w");
-    char firstlines2[] = "type;train_id;retransfer_train_id;paket_id;count_pakets_in_train;recv_data_rate;last_recv_train_id;last_recv_train_send_countid;last_recv_paket_id;last_recv_paket_bytes;timeout_time_tv_sec;timeout_time_tv_usec;recv_time;send_time;recv_time_sec;recv_time_nsec;send_time_sec;send_time_nsec;rtt\n";
+    char firstlines2[] = "type;train_id;retransfer_train_id;paket_id;count_pakets_in_train;recv_data_rate;last_recv_train_id;last_recv_retransfer_train_id;last_recv_paket_id;last_recv_paket_bytes;timeout_time_tv_sec;timeout_time_tv_usec;recv_time;send_time;recv_time_sec;recv_time_nsec;send_time_sec;send_time_nsec;rtt\n";
     fprintf(f, "%s", firstlines2);
 
     bool ende = false;
@@ -334,7 +335,7 @@ void create_csv_datei_zus(char* recvDatei, char* sendDatei, char* csvDatei) {
     }
 
     FILE *f = fdopen(File_Deskriptor, "w");
-    char firstlines2[] = "type;train_id;retransfer_train_id;paket_id;count_pakets_in_train;recv_data_rate;last_recv_train_id;last_recv_train_send_countid;last_recv_paket_id;last_paket_recv_bytes;timeout_time_tv_sec;timeout_time_tv_usec;recv_time;send_time;recv_time_sec;recv_time_usec;send_time_sec;send_time_usec\n";
+    char firstlines2[] = "type;train_id;retransfer_train_id;paket_id;count_pakets_in_train;recv_data_rate;last_recv_train_id;last_recv_retransfer_train_id;last_recv_paket_id;last_paket_recv_bytes;timeout_time_tv_sec;timeout_time_tv_usec;recv_time;send_time;recv_time_sec;recv_time_usec;send_time_sec;send_time_usec;rtt\n";
     fprintf(f, "%s", firstlines2);
 
     bool ende = false;
