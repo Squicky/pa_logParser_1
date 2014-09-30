@@ -56,6 +56,8 @@ bool istInDateiListe(char *datei) {
     return false;
 }
 
+char firstlines[] = "train_id;retransfer_train_id;paket_id;count_pakets_in_train;recv_data_rate;last_recv_train_id;last_recv_train_send_countid;last_recv_paket_id;last_recv_paket_bytes;timeout_time_tv_sec;timeout_time_tv_usec;recv_time;send_time;rtt\n\n\n";
+
 char recv_str[] = "recv";
 char send_str[] = "send";
 
@@ -68,7 +70,7 @@ void log_zeile(FILE *f, char *recv_send_str, paket_header ph) {
 
     timespec2str(timestr1, timestr_size, &ph.recv_time);
     timespec2str(timestr2, timestr_size, &ph.send_time);
-    fprintf(f, "%s;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%s;%s;%ld;%ld;%ld;%ld;\n",
+    fprintf(f, "%s;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%s;%s;%ld;%ld;%ld;%ld;%f;\n",
             recv_send_str,
             ph.train_id,
             ph.retransfer_train_id,
@@ -77,10 +79,10 @@ void log_zeile(FILE *f, char *recv_send_str, paket_header ph) {
             ph.recv_data_rate,
 
             ph.last_recv_train_id,
-            ph.last_recv_train_send_countid,
+            ph.last_recv_retransfer_train_id,
             ph.last_recv_paket_id,
 
-            ph.last_paket_recv_bytes,
+            ph.last_recv_paket_bytes,
 
             ph.timeout_time_tv_sec,
             ph.timeout_time_tv_usec,
@@ -91,7 +93,9 @@ void log_zeile(FILE *f, char *recv_send_str, paket_header ph) {
             ph.recv_time.tv_sec,
             ph.recv_time.tv_nsec,
             ph.send_time.tv_sec,
-            ph.send_time.tv_nsec
+            ph.send_time.tv_nsec,
+
+            ph.rrt
 
             );
 
@@ -125,7 +129,6 @@ void create_csv_datei(char* recvDatei, char* sendDatei, char* csvDatei) {
         //        exit(EXIT_FAILURE);
     }
 
-    char firstlines[] = "train_id;retransfer_train_id;paket_id;count_pakets_in_train;recv_data_rate;last_recv_train_id;last_recv_train_send_countid;last_recv_paket_id;last_paket_recv_bytes;timeout_time_tv_sec;timeout_time_tv_usec;recv_time;send_time\n\n\n";
     int buf_size = strlen(firstlines);
     char buf[buf_size];
     int readed = read(File_Deskriptor_send, buf, buf_size);
@@ -151,7 +154,7 @@ void create_csv_datei(char* recvDatei, char* sendDatei, char* csvDatei) {
     }
 
     FILE *f = fdopen(File_Deskriptor, "w");
-    char firstlines2[] = "type;train_id;retransfer_train_id;paket_id;count_pakets_in_train;recv_data_rate;last_recv_train_id;last_recv_train_send_countid;last_recv_paket_id;last_paket_recv_bytes;timeout_time_tv_sec;timeout_time_tv_usec;recv_time;send_time;recv_time_sec;recv_time_nsec;send_time_sec;send_time_nsec\n";
+    char firstlines2[] = "type;train_id;retransfer_train_id;paket_id;count_pakets_in_train;recv_data_rate;last_recv_train_id;last_recv_train_send_countid;last_recv_paket_id;last_recv_paket_bytes;timeout_time_tv_sec;timeout_time_tv_usec;recv_time;send_time;recv_time_sec;recv_time_nsec;send_time_sec;send_time_nsec;rtt\n";
     fprintf(f, "%s", firstlines2);
 
     bool ende = false;
@@ -237,75 +240,11 @@ void create_csv_datei(char* recvDatei, char* sendDatei, char* csvDatei) {
 
                 log_zeile(f, recv_str, ph_recv);
 
-                /*
-                paket_header ph = ph_recv;
-                timespec2str(timestr1, timestr_size, &ph.recv_time);
-                timespec2str(timestr2, timestr_size, &ph.send_time);
-                fprintf(f, "recv;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%s;%s;%ld;%ld;%ld;%ld;\n",
-                        ph.train_id,
-                        ph.retransfer_train_id,
-                        ph.paket_id,
-                        ph.count_pakets_in_train,
-                        ph.recv_data_rate,
-
-                        ph.last_recv_train_id,
-                        ph.last_recv_train_send_countid,
-                        ph.last_recv_paket_id,
-
-                        ph.last_paket_recv_bytes,
-
-                        ph.timeout_time_tv_sec,
-                        ph.timeout_time_tv_usec,
-
-                        timestr1,
-                        timestr2,
-
-                        ph_recv.recv_time.tv_sec,
-                        ph_recv.recv_time.tv_nsec,
-                        ph_recv.send_time.tv_sec,
-                        ph_recv.send_time.tv_nsec
-
-                        );
-                fflush(f);
-                 */
-
                 php_recv = NULL;
 
             } else {
 
                 log_zeile(f, send_str, ph_send);
-
-                /*
-                paket_header ph = ph_send;
-                timespec2str(timestr1, timestr_size, &ph.recv_time);
-                timespec2str(timestr2, timestr_size, &ph.send_time);
-                fprintf(f, "send;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%s;%s;%ld;%ld;%ld;%ld;\n",
-                        ph.train_id,
-                        ph.retransfer_train_id,
-                        ph.paket_id,
-                        ph.count_pakets_in_train,
-                        ph.recv_data_rate,
-
-                        ph.last_recv_train_id,
-                        ph.last_recv_train_send_countid,
-                        ph.last_recv_paket_id,
-
-                        ph.last_paket_recv_bytes,
-
-                        ph.timeout_time_tv_sec,
-                        ph.timeout_time_tv_usec,
-
-                        timestr1,
-                        timestr2,
-
-                        ph.recv_time.tv_sec,
-                        ph.recv_time.tv_nsec,
-                        ph.send_time.tv_sec,
-                        ph.send_time.tv_nsec
-
-                        );
-                fflush(f);
-                 */
 
                 php_send = NULL;
 
@@ -316,75 +255,11 @@ void create_csv_datei(char* recvDatei, char* sendDatei, char* csvDatei) {
 
                 log_zeile(f, recv_str, ph_recv);
 
-                /*
-                paket_header ph = ph_recv;
-                timespec2str(timestr1, timestr_size, &ph.recv_time);
-                timespec2str(timestr2, timestr_size, &ph.send_time);
-                fprintf(f, "recv;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%s;%s;%ld;%ld;%ld;%ld;\n",
-                        ph.train_id,
-                        ph.retransfer_train_id,
-                        ph.paket_id,
-                        ph.count_pakets_in_train,
-                        ph.recv_data_rate,
-
-                        ph.last_recv_train_id,
-                        ph.last_recv_train_send_countid,
-                        ph.last_recv_paket_id,
-
-                        ph.last_paket_recv_bytes,
-
-                        ph.timeout_time_tv_sec,
-                        ph.timeout_time_tv_usec,
-
-                        timestr1,
-                        timestr2,
-
-                        ph.recv_time.tv_sec,
-                        ph.recv_time.tv_nsec,
-                        ph.send_time.tv_sec,
-                        ph.send_time.tv_nsec
-
-                        );
-                fflush(f);
-                 */
-
                 php_recv = NULL;
 
             } else if (ph_send.send_time.tv_sec < ph_recv.recv_time.tv_sec) {
 
                 log_zeile(f, send_str, ph_send);
-
-                /*
-                paket_header ph = ph_send;
-                timespec2str(timestr1, timestr_size, &ph.recv_time);
-                timespec2str(timestr2, timestr_size, &ph.send_time);
-                fprintf(f, "send;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%s;%s;%ld;%ld;%ld;%ld;\n",
-                        ph.train_id,
-                        ph.retransfer_train_id,
-                        ph.paket_id,
-                        ph.count_pakets_in_train,
-                        ph.recv_data_rate,
-
-                        ph.last_recv_train_id,
-                        ph.last_recv_train_send_countid,
-                        ph.last_recv_paket_id,
-
-                        ph.last_paket_recv_bytes,
-
-                        ph.timeout_time_tv_sec,
-                        ph.timeout_time_tv_usec,
-
-                        timestr1,
-                        timestr2,
-
-                        ph.recv_time.tv_sec,
-                        ph.recv_time.tv_nsec,
-                        ph.send_time.tv_sec,
-                        ph.send_time.tv_nsec
-
-                        );
-                fflush(f);
-                 */
 
                 php_send = NULL;
 
@@ -394,75 +269,11 @@ void create_csv_datei(char* recvDatei, char* sendDatei, char* csvDatei) {
 
                     log_zeile(f, recv_str, ph_recv);
 
-                    /*
-                    paket_header ph = ph_recv;
-                    timespec2str(timestr1, timestr_size, &ph.recv_time);
-                    timespec2str(timestr2, timestr_size, &ph.send_time);
-                    fprintf(f, "recv;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%s;%s;%ld;%ld;%ld;%ld;\n",
-                            ph.train_id,
-                            ph.retransfer_train_id,
-                            ph.paket_id,
-                            ph.count_pakets_in_train,
-                            ph.recv_data_rate,
-
-                            ph.last_recv_train_id,
-                            ph.last_recv_train_send_countid,
-                            ph.last_recv_paket_id,
-
-                            ph.last_paket_recv_bytes,
-
-                            ph.timeout_time_tv_sec,
-                            ph.timeout_time_tv_usec,
-
-                            timestr1,
-                            timestr2,
-
-                            ph.recv_time.tv_sec,
-                            ph.recv_time.tv_nsec,
-                            ph.send_time.tv_sec,
-                            ph.send_time.tv_nsec
-
-                            );
-                    fflush(f);
-                     */
-
                     php_recv = NULL;
 
                 } else {
 
                     log_zeile(f, send_str, ph_send);
-
-                    /*
-                    paket_header ph = ph_send;
-                    timespec2str(timestr1, timestr_size, &ph.recv_time);
-                    timespec2str(timestr2, timestr_size, &ph.send_time);
-                    fprintf(f, "send;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%s;%s;%ld;%ld;%ld;%ld;\n",
-                            ph.train_id,
-                            ph.retransfer_train_id,
-                            ph.paket_id,
-                            ph.count_pakets_in_train,
-                            ph.recv_data_rate,
-
-                            ph.last_recv_train_id,
-                            ph.last_recv_train_send_countid,
-                            ph.last_recv_paket_id,
-
-                            ph.last_paket_recv_bytes,
-
-                            ph.timeout_time_tv_sec,
-                            ph.timeout_time_tv_usec,
-
-                            timestr1,
-                            timestr2,
-
-                            ph.recv_time.tv_sec,
-                            ph.recv_time.tv_nsec,
-                            ph.send_time.tv_sec,
-                            ph.send_time.tv_nsec
-
-                            );
-                    fflush(f);
-                     */
 
                     php_send = NULL;
                 }
@@ -498,7 +309,6 @@ void create_csv_datei_zus(char* recvDatei, char* sendDatei, char* csvDatei) {
         //        exit(EXIT_FAILURE);
     }
 
-    char firstlines[] = "train_id;retransfer_train_id;paket_id;count_pakets_in_train;recv_data_rate;last_recv_train_id;last_recv_train_send_countid;last_recv_paket_id;last_paket_recv_bytes;timeout_time_tv_sec;timeout_time_tv_usec;recv_time;send_time\n\n\n";
     int buf_size = strlen(firstlines);
     char buf[buf_size];
     int readed = read(File_Deskriptor_send, buf, buf_size);
@@ -543,8 +353,6 @@ void create_csv_datei_zus(char* recvDatei, char* sendDatei, char* csvDatei) {
 
     //const uint timestr_size = strlen("2014-12-31 12:59:59.123456789") + 1;
     const uint timestr_size = 30;
-    char timestr1[timestr_size];
-    char timestr2[timestr_size];
 
     struct paket_header last_ph;
     last_ph.train_id = -1;
@@ -609,38 +417,6 @@ void create_csv_datei_zus(char* recvDatei, char* sendDatei, char* csvDatei) {
 
                         log_zeile(f, recv_str, ph_recv);
 
-                        /*
-                        paket_header ph = ph_recv;
-                        timespec2str(timestr1, timestr_size, &ph.recv_time);
-                        timespec2str(timestr2, timestr_size, &ph.send_time);
-                        fprintf(f, "recv;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%s;%s;%ld;%ld;%ld;%ld;\n",
-                                ph.train_id,
-                                ph.retransfer_train_id,
-                                ph.paket_id,
-                                ph.count_pakets_in_train,
-                                ph.recv_data_rate,
-
-                                ph.last_recv_train_id,
-                                ph.last_recv_train_send_countid,
-                                ph.last_recv_paket_id,
-
-                                ph.last_paket_recv_bytes,
-
-                                ph.timeout_time_tv_sec,
-                                ph.timeout_time_tv_usec,
-
-                                timestr1,
-                                timestr2,
-
-                                ph.recv_time.tv_sec,
-                                ph.recv_time.tv_nsec,
-                                ph.send_time.tv_sec,
-                                ph.send_time.tv_nsec
-
-                                );
-                        fflush(f);
-                         */
-
                     } else {
 
                         if (last_ph.train_id == ph_recv.train_id
@@ -654,72 +430,7 @@ void create_csv_datei_zus(char* recvDatei, char* sendDatei, char* csvDatei) {
 
                             log_zeile(f, last_recv_send, last_ph);
 
-                            /*
-                            paket_header ph = last_ph;
-                            timespec2str(timestr1, timestr_size, &ph.recv_time);
-                            timespec2str(timestr2, timestr_size, &ph.send_time);
-                            fprintf(f, "%s;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%s;%s;%ld;%ld;%ld;%ld;\n",
-                                    last_recv_send,
-                                    ph.train_id,
-                                    ph.retransfer_train_id,
-                                    ph.paket_id,
-                                    ph.count_pakets_in_train,
-                                    ph.recv_data_rate,
-
-                                    ph.last_recv_train_id,
-                                    ph.last_recv_train_send_countid,
-                                    ph.last_recv_paket_id,
-
-                                    ph.last_paket_recv_bytes,
-
-                                    ph.timeout_time_tv_sec,
-                                    ph.timeout_time_tv_usec,
-
-                                    timestr1,
-                                    timestr2,
-
-                                    ph.recv_time.tv_sec,
-                                    ph.recv_time.tv_nsec,
-                                    ph.send_time.tv_sec,
-                                    ph.send_time.tv_nsec
-
-                                    );
-                            fflush(f);
-                             */
-
                             log_zeile(f, recv_str, ph_recv);
-
-                            /*
-                            ph = ph_recv;
-                            timespec2str(timestr1, timestr_size, &ph.recv_time);
-                            timespec2str(timestr2, timestr_size, &ph.send_time);
-                            fprintf(f, "recv;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%s;%s;%ld;%ld;%ld;%ld;\n",
-                                    ph.train_id,
-                                    ph.retransfer_train_id,
-                                    ph.paket_id,
-                                    ph.count_pakets_in_train,
-                                    ph.recv_data_rate,
-
-                                    ph.last_recv_train_id,
-                                    ph.last_recv_train_send_countid,
-                                    ph.last_recv_paket_id,
-
-                                    ph.last_paket_recv_bytes,
-
-                                    ph.timeout_time_tv_sec,
-                                    ph.timeout_time_tv_usec,
-
-                                    timestr1,
-                                    timestr2,
-
-                                    ph.recv_time.tv_sec,
-                                    ph.recv_time.tv_nsec,
-                                    ph.send_time.tv_sec,
-                                    ph.send_time.tv_nsec
-
-                                    );
-                            fflush(f);
-                             */
 
                         }
                     }
@@ -738,38 +449,6 @@ void create_csv_datei_zus(char* recvDatei, char* sendDatei, char* csvDatei) {
 
                         log_zeile(f, send_str, ph_send);
 
-                        /*
-                        paket_header ph = ph_send;
-                        timespec2str(timestr1, timestr_size, &ph.recv_time);
-                        timespec2str(timestr2, timestr_size, &ph.send_time);
-                        fprintf(f, "send;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%s;%s;%ld;%ld;%ld;%ld;\n",
-                                ph.train_id,
-                                ph.retransfer_train_id,
-                                ph.paket_id,
-                                ph.count_pakets_in_train,
-                                ph.recv_data_rate,
-
-                                ph.last_recv_train_id,
-                                ph.last_recv_train_send_countid,
-                                ph.last_recv_paket_id,
-
-                                ph.last_paket_recv_bytes,
-
-                                ph.timeout_time_tv_sec,
-                                ph.timeout_time_tv_usec,
-
-                                timestr1,
-                                timestr2,
-
-                                ph.recv_time.tv_sec,
-                                ph.recv_time.tv_nsec,
-                                ph.send_time.tv_sec,
-                                ph.send_time.tv_nsec
-
-                                );
-                        fflush(f);
-                         */
-
                     } else {
 
                         if (last_ph.train_id == ph_send.train_id
@@ -783,72 +462,7 @@ void create_csv_datei_zus(char* recvDatei, char* sendDatei, char* csvDatei) {
 
                             log_zeile(f, last_recv_send, last_ph);
 
-                            /*
-                            paket_header ph = last_ph;
-                            timespec2str(timestr1, timestr_size, &ph.recv_time);
-                            timespec2str(timestr2, timestr_size, &ph.send_time);
-                            fprintf(f, "%s;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%s;%s;%ld;%ld;%ld;%ld;\n",
-                                    last_recv_send,
-                                    ph.train_id,
-                                    ph.retransfer_train_id,
-                                    ph.paket_id,
-                                    ph.count_pakets_in_train,
-                                    ph.recv_data_rate,
-
-                                    ph.last_recv_train_id,
-                                    ph.last_recv_train_send_countid,
-                                    ph.last_recv_paket_id,
-
-                                    ph.last_paket_recv_bytes,
-
-                                    ph.timeout_time_tv_sec,
-                                    ph.timeout_time_tv_usec,
-
-                                    timestr1,
-                                    timestr2,
-
-                                    ph.recv_time.tv_sec,
-                                    ph.recv_time.tv_nsec,
-                                    ph.send_time.tv_sec,
-                                    ph.send_time.tv_nsec
-
-                                    );
-                            fflush(f);
-                             */
-
                             log_zeile(f, send_str, ph_send);
-
-                            /*
-                            ph = ph_send;
-                            timespec2str(timestr1, timestr_size, &ph.recv_time);
-                            timespec2str(timestr2, timestr_size, &ph.send_time);
-                            fprintf(f, "send;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%s;%s;%ld;%ld;%ld;%ld;\n",
-                                    ph.train_id,
-                                    ph.retransfer_train_id,
-                                    ph.paket_id,
-                                    ph.count_pakets_in_train,
-                                    ph.recv_data_rate,
-
-                                    ph.last_recv_train_id,
-                                    ph.last_recv_train_send_countid,
-                                    ph.last_recv_paket_id,
-
-                                    ph.last_paket_recv_bytes,
-
-                                    ph.timeout_time_tv_sec,
-                                    ph.timeout_time_tv_usec,
-
-                                    timestr1,
-                                    timestr2,
-
-                                    ph.recv_time.tv_sec,
-                                    ph.recv_time.tv_nsec,
-                                    ph.send_time.tv_sec,
-                                    ph.send_time.tv_nsec
-
-                                    );
-                            fflush(f);
-                             */
 
                         }
                     }
@@ -871,38 +485,6 @@ void create_csv_datei_zus(char* recvDatei, char* sendDatei, char* csvDatei) {
 
                         log_zeile(f, recv_str, ph_recv);
 
-                        /*
-                        paket_header ph = ph_recv;
-                        timespec2str(timestr1, timestr_size, &ph.recv_time);
-                        timespec2str(timestr2, timestr_size, &ph.send_time);
-                        fprintf(f, "recv;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%s;%s;%ld;%ld;%ld;%ld;\n",
-                                ph.train_id,
-                                ph.retransfer_train_id,
-                                ph.paket_id,
-                                ph.count_pakets_in_train,
-                                ph.recv_data_rate,
-
-                                ph.last_recv_train_id,
-                                ph.last_recv_train_send_countid,
-                                ph.last_recv_paket_id,
-
-                                ph.last_paket_recv_bytes,
-
-                                ph.timeout_time_tv_sec,
-                                ph.timeout_time_tv_usec,
-
-                                timestr1,
-                                timestr2,
-
-                                ph.recv_time.tv_sec,
-                                ph.recv_time.tv_nsec,
-                                ph.send_time.tv_sec,
-                                ph.send_time.tv_nsec
-
-                                );
-                        fflush(f);
-                         */
-
                     } else {
 
                         if (last_ph.train_id == ph_recv.train_id
@@ -916,72 +498,7 @@ void create_csv_datei_zus(char* recvDatei, char* sendDatei, char* csvDatei) {
 
                             log_zeile(f, last_recv_send, last_ph);
 
-                            /*
-                            paket_header ph = last_ph;
-                            timespec2str(timestr1, timestr_size, &ph.recv_time);
-                            timespec2str(timestr2, timestr_size, &ph.send_time);
-                            fprintf(f, "%s;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%s;%s;%ld;%ld;%ld;%ld;\n",
-                                    last_recv_send,
-                                    ph.train_id,
-                                    ph.retransfer_train_id,
-                                    ph.paket_id,
-                                    ph.count_pakets_in_train,
-                                    ph.recv_data_rate,
-
-                                    ph.last_recv_train_id,
-                                    ph.last_recv_train_send_countid,
-                                    ph.last_recv_paket_id,
-
-                                    ph.last_paket_recv_bytes,
-
-                                    ph.timeout_time_tv_sec,
-                                    ph.timeout_time_tv_usec,
-
-                                    timestr1,
-                                    timestr2,
-
-                                    ph.recv_time.tv_sec,
-                                    ph.recv_time.tv_nsec,
-                                    ph.send_time.tv_sec,
-                                    ph.send_time.tv_nsec
-
-                                    );
-                            fflush(f);
-                             */
-
                             log_zeile(f, recv_str, ph_recv);
-
-                            /*
-                            ph = ph_recv;
-                            timespec2str(timestr1, timestr_size, &ph.recv_time);
-                            timespec2str(timestr2, timestr_size, &ph.send_time);
-                            fprintf(f, "recv;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%s;%s;%ld;%ld;%ld;%ld;\n",
-                                    ph.train_id,
-                                    ph.retransfer_train_id,
-                                    ph.paket_id,
-                                    ph.count_pakets_in_train,
-                                    ph.recv_data_rate,
-
-                                    ph.last_recv_train_id,
-                                    ph.last_recv_train_send_countid,
-                                    ph.last_recv_paket_id,
-
-                                    ph.last_paket_recv_bytes,
-
-                                    ph.timeout_time_tv_sec,
-                                    ph.timeout_time_tv_usec,
-
-                                    timestr1,
-                                    timestr2,
-
-                                    ph.recv_time.tv_sec,
-                                    ph.recv_time.tv_nsec,
-                                    ph.send_time.tv_sec,
-                                    ph.send_time.tv_nsec
-
-                                    );
-                            fflush(f);
-                             */
 
                         }
                     }
@@ -1000,38 +517,6 @@ void create_csv_datei_zus(char* recvDatei, char* sendDatei, char* csvDatei) {
 
                         log_zeile(f, send_str, ph_send);
 
-                        /*
-                        paket_header ph = ph_send;
-                        timespec2str(timestr1, timestr_size, &ph.recv_time);
-                        timespec2str(timestr2, timestr_size, &ph.send_time);
-                        fprintf(f, "send;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%s;%s;%ld;%ld;%ld;%ld;\n",
-                                ph.train_id,
-                                ph.retransfer_train_id,
-                                ph.paket_id,
-                                ph.count_pakets_in_train,
-                                ph.recv_data_rate,
-
-                                ph.last_recv_train_id,
-                                ph.last_recv_train_send_countid,
-                                ph.last_recv_paket_id,
-
-                                ph.last_paket_recv_bytes,
-
-                                ph.timeout_time_tv_sec,
-                                ph.timeout_time_tv_usec,
-
-                                timestr1,
-                                timestr2,
-
-                                ph.recv_time.tv_sec,
-                                ph.recv_time.tv_nsec,
-                                ph.send_time.tv_sec,
-                                ph.send_time.tv_nsec
-
-                                );
-                        fflush(f);
-                         */
-
                     } else {
 
                         if (last_ph.train_id == ph_send.train_id
@@ -1045,72 +530,8 @@ void create_csv_datei_zus(char* recvDatei, char* sendDatei, char* csvDatei) {
 
                             log_zeile(f, last_recv_send, last_ph);
 
-                            /*
-                            paket_header ph = last_ph;
-                            timespec2str(timestr1, timestr_size, &ph.recv_time);
-                            timespec2str(timestr2, timestr_size, &ph.send_time);
-                            fprintf(f, "%s;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%s;%s;%ld;%ld;%ld;%ld;\n",
-                                    last_recv_send,
-                                    ph.train_id,
-                                    ph.retransfer_train_id,
-                                    ph.paket_id,
-                                    ph.count_pakets_in_train,
-                                    ph.recv_data_rate,
-
-                                    ph.last_recv_train_id,
-                                    ph.last_recv_train_send_countid,
-                                    ph.last_recv_paket_id,
-
-                                    ph.last_paket_recv_bytes,
-
-                                    ph.timeout_time_tv_sec,
-                                    ph.timeout_time_tv_usec,
-
-                                    timestr1,
-                                    timestr2,
-
-                                    ph.recv_time.tv_sec,
-                                    ph.recv_time.tv_nsec,
-                                    ph.send_time.tv_sec,
-                                    ph.send_time.tv_nsec
-
-                                    );
-                            fflush(f);
-                             */
-
                             log_zeile(f, send_str, ph_send);
 
-                            /*
-                            ph = ph_send;
-                            timespec2str(timestr1, timestr_size, &ph.recv_time);
-                            timespec2str(timestr2, timestr_size, &ph.send_time);
-                            fprintf(f, "send;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%s;%s;%ld;%ld;%ld;%ld;\n",
-                                    ph.train_id,
-                                    ph.retransfer_train_id,
-                                    ph.paket_id,
-                                    ph.count_pakets_in_train,
-                                    ph.recv_data_rate,
-
-                                    ph.last_recv_train_id,
-                                    ph.last_recv_train_send_countid,
-                                    ph.last_recv_paket_id,
-
-                                    ph.last_paket_recv_bytes,
-
-                                    ph.timeout_time_tv_sec,
-                                    ph.timeout_time_tv_usec,
-
-                                    timestr1,
-                                    timestr2,
-
-                                    ph.recv_time.tv_sec,
-                                    ph.recv_time.tv_nsec,
-                                    ph.send_time.tv_sec,
-                                    ph.send_time.tv_nsec
-
-                                    );
-                            fflush(f);
-                             */
                         }
                     }
 
@@ -1130,38 +551,6 @@ void create_csv_datei_zus(char* recvDatei, char* sendDatei, char* csvDatei) {
 
                             log_zeile(f, recv_str, ph_recv);
 
-                            /*
-                            paket_header ph = ph_recv;
-                            timespec2str(timestr1, timestr_size, &ph.recv_time);
-                            timespec2str(timestr2, timestr_size, &ph.send_time);
-                            fprintf(f, "recv;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%s;%s;%ld;%ld;%ld;%ld;\n",
-                                    ph.train_id,
-                                    ph.retransfer_train_id,
-                                    ph.paket_id,
-                                    ph.count_pakets_in_train,
-                                    ph.recv_data_rate,
-
-                                    ph.last_recv_train_id,
-                                    ph.last_recv_train_send_countid,
-                                    ph.last_recv_paket_id,
-
-                                    ph.last_paket_recv_bytes,
-
-                                    ph.timeout_time_tv_sec,
-                                    ph.timeout_time_tv_usec,
-
-                                    timestr1,
-                                    timestr2,
-
-                                    ph.recv_time.tv_sec,
-                                    ph.recv_time.tv_nsec,
-                                    ph.send_time.tv_sec,
-                                    ph.send_time.tv_nsec
-
-                                    );
-                            fflush(f);
-                             */
-
                         } else {
 
                             if (last_ph.train_id == ph_recv.train_id
@@ -1175,72 +564,8 @@ void create_csv_datei_zus(char* recvDatei, char* sendDatei, char* csvDatei) {
 
                                 log_zeile(f, last_recv_send, last_ph);
 
-                                /*
-                                paket_header ph = last_ph;
-                                timespec2str(timestr1, timestr_size, &ph.recv_time);
-                                timespec2str(timestr2, timestr_size, &ph.send_time);
-                                fprintf(f, "%s;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%s;%s;%ld;%ld;%ld;%ld;\n",
-                                        last_recv_send,
-                                        ph.train_id,
-                                        ph.retransfer_train_id,
-                                        ph.paket_id,
-                                        ph.count_pakets_in_train,
-                                        ph.recv_data_rate,
-
-                                        ph.last_recv_train_id,
-                                        ph.last_recv_train_send_countid,
-                                        ph.last_recv_paket_id,
-
-                                        ph.last_paket_recv_bytes,
-
-                                        ph.timeout_time_tv_sec,
-                                        ph.timeout_time_tv_usec,
-
-                                        timestr1,
-                                        timestr2,
-
-                                        ph.recv_time.tv_sec,
-                                        ph.recv_time.tv_nsec,
-                                        ph.send_time.tv_sec,
-                                        ph.send_time.tv_nsec
-
-                                        );
-                                fflush(f);
-                                 */
-
                                 log_zeile(f, recv_str, ph_recv);
 
-                                /*
-                                ph = ph_recv;
-                                timespec2str(timestr1, timestr_size, &ph.recv_time);
-                                timespec2str(timestr2, timestr_size, &ph.send_time);
-                                fprintf(f, "recv;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%s;%s;%ld;%ld;%ld;%ld;\n",
-                                        ph.train_id,
-                                        ph.retransfer_train_id,
-                                        ph.paket_id,
-                                        ph.count_pakets_in_train,
-                                        ph.recv_data_rate,
-
-                                        ph.last_recv_train_id,
-                                        ph.last_recv_train_send_countid,
-                                        ph.last_recv_paket_id,
-
-                                        ph.last_paket_recv_bytes,
-
-                                        ph.timeout_time_tv_sec,
-                                        ph.timeout_time_tv_usec,
-
-                                        timestr1,
-                                        timestr2,
-
-                                        ph.recv_time.tv_sec,
-                                        ph.recv_time.tv_nsec,
-                                        ph.send_time.tv_sec,
-                                        ph.send_time.tv_nsec
-
-                                        );
-                                fflush(f);
-                                 */
                             }
                         }
 
@@ -1258,38 +583,6 @@ void create_csv_datei_zus(char* recvDatei, char* sendDatei, char* csvDatei) {
 
                             log_zeile(f, send_str, ph_send);
 
-                            /*
-                            paket_header ph = ph_send;
-                            timespec2str(timestr1, timestr_size, &ph.recv_time);
-                            timespec2str(timestr2, timestr_size, &ph.send_time);
-                            fprintf(f, "send;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%s;%s;%ld;%ld;%ld;%ld;\n",
-                                    ph.train_id,
-                                    ph.retransfer_train_id,
-                                    ph.paket_id,
-                                    ph.count_pakets_in_train,
-                                    ph.recv_data_rate,
-
-                                    ph.last_recv_train_id,
-                                    ph.last_recv_train_send_countid,
-                                    ph.last_recv_paket_id,
-
-                                    ph.last_paket_recv_bytes,
-
-                                    ph.timeout_time_tv_sec,
-                                    ph.timeout_time_tv_usec,
-
-                                    timestr1,
-                                    timestr2,
-
-                                    ph.recv_time.tv_sec,
-                                    ph.recv_time.tv_nsec,
-                                    ph.send_time.tv_sec,
-                                    ph.send_time.tv_nsec
-
-                                    );
-                            fflush(f);
-                             */
-
                         } else {
 
                             if (last_ph.train_id == ph_send.train_id
@@ -1303,72 +596,7 @@ void create_csv_datei_zus(char* recvDatei, char* sendDatei, char* csvDatei) {
 
                                 log_zeile(f, last_recv_send, last_ph);
 
-                                /*
-                                paket_header ph = last_ph;
-                                timespec2str(timestr1, timestr_size, &ph.recv_time);
-                                timespec2str(timestr2, timestr_size, &ph.send_time);
-                                fprintf(f, "%s;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%s;%s;%ld;%ld;%ld;%ld;\n",
-                                        last_recv_send,
-                                        ph.train_id,
-                                        ph.retransfer_train_id,
-                                        ph.paket_id,
-                                        ph.count_pakets_in_train,
-                                        ph.recv_data_rate,
-
-                                        ph.last_recv_train_id,
-                                        ph.last_recv_train_send_countid,
-                                        ph.last_recv_paket_id,
-
-                                        ph.last_paket_recv_bytes,
-
-                                        ph.timeout_time_tv_sec,
-                                        ph.timeout_time_tv_usec,
-
-                                        timestr1,
-                                        timestr2,
-
-                                        ph.recv_time.tv_sec,
-                                        ph.recv_time.tv_nsec,
-                                        ph.send_time.tv_sec,
-                                        ph.send_time.tv_nsec
-
-                                        );
-                                fflush(f);
-                                 */
-
                                 log_zeile(f, send_str, ph_send);
-
-                                /*
-                                ph = ph_send;
-                                timespec2str(timestr1, timestr_size, &ph.recv_time);
-                                timespec2str(timestr2, timestr_size, &ph.send_time);
-                                fprintf(f, "send;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%s;%s;%ld;%ld;%ld;%ld;\n",
-                                        ph.train_id,
-                                        ph.retransfer_train_id,
-                                        ph.paket_id,
-                                        ph.count_pakets_in_train,
-                                        ph.recv_data_rate,
-
-                                        ph.last_recv_train_id,
-                                        ph.last_recv_train_send_countid,
-                                        ph.last_recv_paket_id,
-
-                                        ph.last_paket_recv_bytes,
-
-                                        ph.timeout_time_tv_sec,
-                                        ph.timeout_time_tv_usec,
-
-                                        timestr1,
-                                        timestr2,
-
-                                        ph.recv_time.tv_sec,
-                                        ph.recv_time.tv_nsec,
-                                        ph.send_time.tv_sec,
-                                        ph.send_time.tv_nsec
-
-                                        );
-                                fflush(f);
-                                 */
 
                             }
                         }
