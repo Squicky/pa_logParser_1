@@ -58,50 +58,180 @@ bool istInDateiListe(char *datei) {
 
 char firstlines[] = "train_id;retransfer_train_id;paket_id;count_pakets_in_train;recv_data_rate;last_recv_train_id;last_recv_retransfer_train_id;last_recv_paket_id;last_recv_paket_bytes;timeout_time_tv_sec;timeout_time_tv_usec;recv_time;send_time;rtt\n\n\n";
 
+char firstlines2[] = "type;train_id;retransfer_train_id;paket_id;count_pakets_in_train;recv_data_rate;last_recv_train_id;last_recv_retransfer_train_id;last_recv_paket_id;last_recv_paket_bytes;timeout_time_tv_sec;timeout_time_tv_usec;recv_time;send_time;recv_time_sec;recv_time_nsec;send_time_sec;send_time_nsec;rtt;mess_paket_size;datarate_train;datarate_paket\n";
+
+timespec timespec_diff_timespec(timespec *start, timespec *end) {
+    timespec temp;
+
+    if (end->tv_nsec < start->tv_nsec) {
+        temp.tv_sec = end->tv_sec - start->tv_sec - 1;
+        temp.tv_nsec = 1000000000 + end->tv_nsec - start->tv_nsec;
+    } else {
+        temp.tv_sec = end->tv_sec - start->tv_sec;
+        temp.tv_nsec = end->tv_nsec - start->tv_nsec;
+    }
+    return temp;
+}
+
+double timespec_diff_double(timespec *start, timespec *end) {
+    timespec temp = timespec_diff_timespec(start, end);
+
+    double temp2 = temp.tv_nsec;
+    double temp3 = 1000000000;
+    temp2 = temp2 / temp3;
+    temp3 = temp.tv_sec;
+
+    return (temp2 + temp3);
+}
+
+
 char recv_str[] = "recv";
 char send_str[] = "send";
 
-void log_zeile(FILE *f, char *recv_send_str, paket_header ph) {
+int bytes_total_train = -1;
+timespec first_timespec;
+timespec last_timespec;
+char *last_send_recv_str = recv_str;
+int datarate_train;
+int datarate_paket;
+
+void log_zeile(bool write, FILE *f, char *recv_send_str, paket_header ph) {
 
     //const uint timestr_size = strlen("2014-12-31 12:59:59.123456789") + 1;
     const uint timestr_size = 30;
     char timestr1[timestr_size];
     char timestr2[timestr_size];
 
-    timespec2str(timestr1, timestr_size, &ph.recv_time);
-    timespec2str(timestr2, timestr_size, &ph.send_time);
-    fprintf(f, "%s;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%s;%s;%ld;%ld;%ld;%ld;%f;\n",
-            recv_send_str,
-            ph.train_id,
-            ph.retransfer_train_id,
-            ph.paket_id,
-            ph.count_pakets_in_train,
-            ph.recv_data_rate,
+    if (ph.train_id == 13) {
+        ph.train_id++;
+        ph.train_id--;
+    }
 
-            ph.last_recv_train_id,
-            ph.last_recv_retransfer_train_id,
-            ph.last_recv_paket_id,
+    if (bytes_total_train == -1 || 0 != strcmp(last_send_recv_str, recv_send_str)) {
+        bytes_total_train = 0;
+        datarate_train = 0;
+        datarate_paket = 0;
 
-            ph.last_recv_paket_bytes,
+        last_send_recv_str = recv_send_str;
+        if (0 == strcmp(recv_send_str, recv_str)) {
+            first_timespec = ph.recv_time;
+        } else {
+            first_timespec = ph.send_time;
+        }
 
-            ph.timeout_time_tv_sec,
-            ph.timeout_time_tv_usec,
+        last_timespec = first_timespec;
+    } else {
+        bytes_total_train = bytes_total_train + ph.mess_paket_size;
 
-            timestr1,
-            timestr2,
+        timespec x_timespec;
+        if (0 == strcmp(recv_send_str, recv_str)) {
+            x_timespec = ph.recv_time;
+        } else {
+            x_timespec = ph.send_time;
+        }
 
-            ph.recv_time.tv_sec,
-            ph.recv_time.tv_nsec,
-            ph.send_time.tv_sec,
-            ph.send_time.tv_nsec,
+        double d = bytes_total_train * 8;
+        d = d / timespec_diff_double(&first_timespec, &x_timespec);
+        datarate_train = d;
 
-            ph.rtt
+        d = ph.mess_paket_size * 8;
+        d = d / timespec_diff_double(&last_timespec, &x_timespec);
+        datarate_paket = d;
 
-            );
+        last_timespec = x_timespec;
+    }
 
-    fflush(f);
+
+    if (write) {
+        timespec2str(timestr1, timestr_size, &ph.recv_time);
+        timespec2str(timestr2, timestr_size, &ph.send_time);
+
+        fprintf(f, "%s;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%s;%s;%ld;%ld;%ld;%ld;%f;%d;%d;%d;\n",
+                //printf("%s;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%s;%s;%ld;%ld;%ld;%ld;%f;%d;%d;%d;\n",
+                recv_send_str,
+                ph.train_id,
+                ph.retransfer_train_id,
+                ph.paket_id,
+                ph.count_pakets_in_train,
+                ph.recv_data_rate,
+
+                ph.last_recv_train_id,
+                ph.last_recv_retransfer_train_id,
+                ph.last_recv_paket_id,
+
+                ph.last_recv_paket_bytes,
+
+                ph.timeout_time_tv_sec,
+                ph.timeout_time_tv_usec,
+
+                timestr1,
+                timestr2,
+
+                ph.recv_time.tv_sec,
+                ph.recv_time.tv_nsec,
+                ph.send_time.tv_sec,
+                ph.send_time.tv_nsec,
+
+                ph.rtt,
+
+                ph.mess_paket_size,
+                datarate_train,
+                datarate_paket
+                );
+
+        fflush(f);
+    }
+
 }
 
+void log_zeile2(bool write, FILE *f, char *recv_send_str, paket_header ph) {
+
+    //const uint timestr_size = strlen("2014-12-31 12:59:59.123456789") + 1;
+    const uint timestr_size = 30;
+    char timestr1[timestr_size];
+    char timestr2[timestr_size];
+
+    if (write) {
+        timespec2str(timestr1, timestr_size, &ph.recv_time);
+        timespec2str(timestr2, timestr_size, &ph.send_time);
+
+        fprintf(f, "%s;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%s;%s;%ld;%ld;%ld;%ld;%f;%d;%d;%d;\n",
+                //printf("%s;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%s;%s;%ld;%ld;%ld;%ld;%f;%d;%d;%d;\n",
+                recv_send_str,
+                ph.train_id,
+                ph.retransfer_train_id,
+                ph.paket_id,
+                ph.count_pakets_in_train,
+                ph.recv_data_rate,
+
+                ph.last_recv_train_id,
+                ph.last_recv_retransfer_train_id,
+                ph.last_recv_paket_id,
+
+                ph.last_recv_paket_bytes,
+
+                ph.timeout_time_tv_sec,
+                ph.timeout_time_tv_usec,
+
+                timestr1,
+                timestr2,
+
+                ph.recv_time.tv_sec,
+                ph.recv_time.tv_nsec,
+                ph.send_time.tv_sec,
+                ph.send_time.tv_nsec,
+
+                ph.rtt,
+
+                ph.mess_paket_size,
+                datarate_train,
+                datarate_paket
+                );
+
+        fflush(f);
+    }
+
+}
 // cvs Datei erstellen, mit allen paketen
 
 void create_csv_datei(char* recvDatei, char* sendDatei, char* csvDatei) {
@@ -155,7 +285,6 @@ void create_csv_datei(char* recvDatei, char* sendDatei, char* csvDatei) {
     }
 
     FILE *f = fdopen(File_Deskriptor, "w");
-    char firstlines2[] = "type;train_id;retransfer_train_id;paket_id;count_pakets_in_train;recv_data_rate;last_recv_train_id;last_recv_retransfer_train_id;last_recv_paket_id;last_recv_paket_bytes;timeout_time_tv_sec;timeout_time_tv_usec;recv_time;send_time;recv_time_sec;recv_time_nsec;send_time_sec;send_time_nsec;rtt\n";
     fprintf(f, "%s", firstlines2);
 
     bool ende = false;
@@ -219,17 +348,6 @@ void create_csv_datei(char* recvDatei, char* sendDatei, char* csvDatei) {
             }
         }
 
-        if (php_recv != NULL) {
-            if (php_recv->train_id == 12
-                    && php_recv->retransfer_train_id == 0
-                    && php_recv->paket_id == 0) {
-
-                php_recv++;
-                php_recv--;
-
-            }
-        }
-
         if (php_recv == NULL && php_send == NULL) {
             ende = true;
             continue;
@@ -239,13 +357,13 @@ void create_csv_datei(char* recvDatei, char* sendDatei, char* csvDatei) {
 
             if (php_recv != NULL) {
 
-                log_zeile(f, recv_str, ph_recv);
+                log_zeile(true, f, recv_str, ph_recv);
 
                 php_recv = NULL;
 
             } else {
 
-                log_zeile(f, send_str, ph_send);
+                log_zeile(true, f, send_str, ph_send);
 
                 php_send = NULL;
 
@@ -254,13 +372,13 @@ void create_csv_datei(char* recvDatei, char* sendDatei, char* csvDatei) {
         } else {
             if (ph_recv.recv_time.tv_sec < ph_send.send_time.tv_sec) {
 
-                log_zeile(f, recv_str, ph_recv);
+                log_zeile(true, f, recv_str, ph_recv);
 
                 php_recv = NULL;
 
             } else if (ph_send.send_time.tv_sec < ph_recv.recv_time.tv_sec) {
 
-                log_zeile(f, send_str, ph_send);
+                log_zeile(true, f, send_str, ph_send);
 
                 php_send = NULL;
 
@@ -268,13 +386,13 @@ void create_csv_datei(char* recvDatei, char* sendDatei, char* csvDatei) {
 
                 if (ph_recv.recv_time.tv_nsec < ph_send.send_time.tv_nsec) {
 
-                    log_zeile(f, recv_str, ph_recv);
+                    log_zeile(true, f, recv_str, ph_recv);
 
                     php_recv = NULL;
 
                 } else {
 
-                    log_zeile(f, send_str, ph_send);
+                    log_zeile(true, f, send_str, ph_send);
 
                     php_send = NULL;
                 }
@@ -291,13 +409,13 @@ void create_csv_datei_zus(char* recvDatei, char* sendDatei, char* csvDatei) {
     int File_Deskriptor_recv;
     int File_Deskriptor;
 
-    // O_WRONLY nur zum Schreiben �ffnen
-    // O_RDWR zum Lesen und Schreiben �ffnen
-    // O_RDONLY nur zum Lesen �ffnen
+    // O_WRONLY nur zum Schreiben oeffnen
+    // O_RDWR zum Lesen und Schreiben oeffnen
+    // O_RDONLY nur zum Lesen oeffnen
     // O_CREAT Falls die Datei nicht existiert, wird sie neu angelegt. Falls die Datei existiert, ist O_CREAT ohne Wirkung.
-    // O_APPEND Datei �ffnen zum Schreiben am Ende
-    // O_EXCL O_EXCL kombiniert mit O_CREAT bedeutet, dass die Datei nicht ge�ffnet werden kann, wenn sie bereits existiert und open() den Wert 1 zur�ckliefert (1 == Fehler).
-    // O_TRUNC Eine Datei, die zum Schreiben ge�ffnet wird, wird geleert. Darauffolgendes Schreiben bewirkt erneutes Beschreiben der Datei von Anfang an. Die Attribute der Datei bleiben erhalten.
+    // O_APPEND Datei oeffnen zum Schreiben am Ende
+    // O_EXCL O_EXCL kombiniert mit O_CREAT bedeutet, dass die Datei nicht geoeffnet werden kann, wenn sie bereits existiert und open() den Wert 1 zurueckliefert (1 == Fehler).
+    // O_TRUNC Eine Datei, die zum Schreiben geoeffnet wird, wird geleert. Darauffolgendes Schreiben bewirkt erneutes Beschreiben der Datei von Anfang an. Die Attribute der Datei bleiben erhalten.
     if ((File_Deskriptor_send = open(sendDatei, O_RDONLY)) == -1) {
         printf("ERROR:\n  Fehler beim Oeffnen / Erstellen der Datei \"%s\" \n(%s)\n ", sendDatei, strerror(errno));
         fflush(stdout);
@@ -335,7 +453,6 @@ void create_csv_datei_zus(char* recvDatei, char* sendDatei, char* csvDatei) {
     }
 
     FILE *f = fdopen(File_Deskriptor, "w");
-    char firstlines2[] = "type;train_id;retransfer_train_id;paket_id;count_pakets_in_train;recv_data_rate;last_recv_train_id;last_recv_retransfer_train_id;last_recv_paket_id;last_paket_recv_bytes;timeout_time_tv_sec;timeout_time_tv_usec;recv_time;send_time;recv_time_sec;recv_time_usec;send_time_sec;send_time_usec;rtt\n";
     fprintf(f, "%s", firstlines2);
 
     bool ende = false;
@@ -416,7 +533,7 @@ void create_csv_datei_zus(char* recvDatei, char* sendDatei, char* csvDatei) {
                     // recv speichern
                     if (last_ph.train_id == -1) {
 
-                        log_zeile(f, recv_str, ph_recv);
+                        log_zeile(true, f, recv_str, ph_recv);
 
                     } else {
 
@@ -424,14 +541,16 @@ void create_csv_datei_zus(char* recvDatei, char* sendDatei, char* csvDatei) {
                                 && last_ph.retransfer_train_id == ph_recv.retransfer_train_id
                                 && last_ph.paket_id == (ph_recv.paket_id - 1)) {
 
+                            log_zeile(false, f, recv_str, ph_recv);
+
                         } else {
 
                             fprintf(f, "...;...;...;...;...;...;...;...;...;...;...;...\n");
                             fflush(f);
 
-                            log_zeile(f, last_recv_send, last_ph);
+                            log_zeile2(true, f, last_recv_send, last_ph);
 
-                            log_zeile(f, recv_str, ph_recv);
+                            log_zeile(true, f, recv_str, ph_recv);
 
                         }
                     }
@@ -448,7 +567,7 @@ void create_csv_datei_zus(char* recvDatei, char* sendDatei, char* csvDatei) {
                     // send speichern
                     if (last_ph.train_id == -1) {
 
-                        log_zeile(f, send_str, ph_send);
+                        log_zeile(true, f, send_str, ph_send);
 
                     } else {
 
@@ -456,14 +575,16 @@ void create_csv_datei_zus(char* recvDatei, char* sendDatei, char* csvDatei) {
                                 && last_ph.retransfer_train_id == ph_send.retransfer_train_id
                                 && last_ph.paket_id == (ph_send.paket_id - 1)) {
 
+                            log_zeile(false, f, send_str, ph_send);
+
                         } else {
 
                             fprintf(f, "...;...;...;...;...;...;...;...;...;...;...;...\n");
                             fflush(f);
 
-                            log_zeile(f, last_recv_send, last_ph);
+                            log_zeile2(true, f, last_recv_send, last_ph);
 
-                            log_zeile(f, send_str, ph_send);
+                            log_zeile(true, f, send_str, ph_send);
 
                         }
                     }
@@ -484,7 +605,7 @@ void create_csv_datei_zus(char* recvDatei, char* sendDatei, char* csvDatei) {
                     // recv speichern
                     if (last_ph.train_id == -1) {
 
-                        log_zeile(f, recv_str, ph_recv);
+                        log_zeile(true, f, recv_str, ph_recv);
 
                     } else {
 
@@ -492,14 +613,16 @@ void create_csv_datei_zus(char* recvDatei, char* sendDatei, char* csvDatei) {
                                 && last_ph.retransfer_train_id == ph_recv.retransfer_train_id
                                 && last_ph.paket_id == (ph_recv.paket_id - 1)) {
 
+                            log_zeile(false, f, recv_str, ph_recv);
+
                         } else {
 
                             fprintf(f, "...;...;...;...;...;...;...;...;...;...;...;...\n");
                             fflush(f);
 
-                            log_zeile(f, last_recv_send, last_ph);
+                            log_zeile2(true, f, last_recv_send, last_ph);
 
-                            log_zeile(f, recv_str, ph_recv);
+                            log_zeile(true, f, recv_str, ph_recv);
 
                         }
                     }
@@ -516,7 +639,7 @@ void create_csv_datei_zus(char* recvDatei, char* sendDatei, char* csvDatei) {
                     // send speichern
                     if (last_ph.train_id == -1) {
 
-                        log_zeile(f, send_str, ph_send);
+                        log_zeile(true, f, send_str, ph_send);
 
                     } else {
 
@@ -524,14 +647,16 @@ void create_csv_datei_zus(char* recvDatei, char* sendDatei, char* csvDatei) {
                                 && last_ph.retransfer_train_id == ph_send.retransfer_train_id
                                 && last_ph.paket_id == (ph_send.paket_id - 1)) {
 
+                            log_zeile(false, f, send_str, ph_send);
+
                         } else {
 
                             fprintf(f, "...;...;...;...;...;...;...;...;...;...;...;...\n");
                             fflush(f);
 
-                            log_zeile(f, last_recv_send, last_ph);
+                            log_zeile2(true, f, last_recv_send, last_ph);
 
-                            log_zeile(f, send_str, ph_send);
+                            log_zeile(true, f, send_str, ph_send);
 
                         }
                     }
@@ -550,7 +675,7 @@ void create_csv_datei_zus(char* recvDatei, char* sendDatei, char* csvDatei) {
                         // recv speichern
                         if (last_ph.train_id == -1) {
 
-                            log_zeile(f, recv_str, ph_recv);
+                            log_zeile(true, f, recv_str, ph_recv);
 
                         } else {
 
@@ -558,14 +683,16 @@ void create_csv_datei_zus(char* recvDatei, char* sendDatei, char* csvDatei) {
                                     && last_ph.retransfer_train_id == ph_recv.retransfer_train_id
                                     && last_ph.paket_id == (ph_recv.paket_id - 1)) {
 
+                                log_zeile(false, f, recv_str, ph_recv);
+
                             } else {
 
                                 fprintf(f, "...;...;...;...;...;...;...;...;...;...;...;...\n");
                                 fflush(f);
 
-                                log_zeile(f, last_recv_send, last_ph);
+                                log_zeile2(true, f, last_recv_send, last_ph);
 
-                                log_zeile(f, recv_str, ph_recv);
+                                log_zeile(true, f, recv_str, ph_recv);
 
                             }
                         }
@@ -582,7 +709,7 @@ void create_csv_datei_zus(char* recvDatei, char* sendDatei, char* csvDatei) {
                         // send speichern
                         if (last_ph.train_id == -1) {
 
-                            log_zeile(f, send_str, ph_send);
+                            log_zeile(true, f, send_str, ph_send);
 
                         } else {
 
@@ -590,14 +717,16 @@ void create_csv_datei_zus(char* recvDatei, char* sendDatei, char* csvDatei) {
                                     && last_ph.retransfer_train_id == ph_send.retransfer_train_id
                                     && last_ph.paket_id == (ph_send.paket_id - 1)) {
 
+                                log_zeile(false, f, send_str, ph_send);
+
                             } else {
 
                                 fprintf(f, "...;...;...;...;...;...;...;...;...;...;...;...\n");
                                 fflush(f);
 
-                                log_zeile(f, last_recv_send, last_ph);
+                                log_zeile2(true, f, last_recv_send, last_ph);
 
-                                log_zeile(f, send_str, ph_send);
+                                log_zeile(true, f, send_str, ph_send);
 
                             }
                         }
