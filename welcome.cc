@@ -56,9 +56,9 @@ bool istInDateiListe(char *datei) {
     return false;
 }
 
-char firstlines[] = "train_id;retransfer_train_id;paket_id;count_pakets_in_train;recv_data_rate;last_recv_train_id;last_recv_retransfer_train_id;last_recv_paket_id;last_recv_paket_bytes;timeout_time_tv_sec;timeout_time_tv_usec;recv_time;send_time;rtt\n\n\n";
+char firstlines[] = "train_id;retransfer_train_id;paket_id;count_pakets_in_train;recv_data_rate;first_recv_train_id;first_recv_retransfer_train_id;first_recv_paket_id;first_recv_recv_time;last_recv_paket_bytes;timeout_time_tv_sec;timeout_time_tv_usec;recv_time;send_time;rtt\n\n\n";
 
-char firstlines2[] = "type;train_id;retransfer_train_id;paket_id;count_pakets_in_train;recv_data_rate;last_recv_train_id;last_recv_retransfer_train_id;last_recv_paket_id;last_recv_paket_bytes;timeout_time_tv_sec;timeout_time_tv_usec;recv_time;send_time;recv_time_sec;recv_time_nsec;send_time_sec;send_time_nsec;rtt;mess_paket_size;datarate_train;datarate_paket\n";
+char firstlines2[] = "type;train_id;retransfer_train_id;paket_id;count_pakets_in_train;recv_data_rate;first_recv_train_id;first_recv_retransfer_train_id;first_recv_paket_id;first_recv_recv_time;first_recv_sec;first_recv_nsec;last_recv_paket_bytes;timeout_time_tv_sec;timeout_time_tv_usec;recv_time;send_time;recv_time_sec;recv_time_nsec;send_time_sec;send_time_nsec;rtt;mess_paket_size;datarate_train;datarate_paket\n";
 
 timespec timespec_diff_timespec(timespec *start, timespec *end) {
     timespec temp;
@@ -101,6 +101,7 @@ void log_zeile(bool write, FILE *f, char *recv_send_str, paket_header ph) {
     const uint timestr_size = 30;
     char timestr1[timestr_size];
     char timestr2[timestr_size];
+    char timestr3[timestr_size];
 
     if (ph.train_id == 13) {
         ph.train_id++;
@@ -145,8 +146,10 @@ void log_zeile(bool write, FILE *f, char *recv_send_str, paket_header ph) {
     if (write) {
         timespec2str(timestr1, timestr_size, &ph.recv_time);
         timespec2str(timestr2, timestr_size, &ph.send_time);
+        timespec2str(timestr3, timestr_size, &ph.first_recv_recv_time);
 
-        fprintf(f, "%s;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%s;%s;%ld;%ld;%ld;%ld;%f;%d;%d;%d;\n",
+
+        fprintf(f, "%s;%d;%d;%d;%d;%d;%d;%d;%d;%s;%ld;%ld;%d;%s;%s;%ld;%ld;%ld;%ld;%f;%d;%d;%d;\n",
                 //printf("%s;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%s;%s;%ld;%ld;%ld;%ld;%f;%d;%d;%d;\n",
                 recv_send_str,
                 ph.train_id,
@@ -155,14 +158,15 @@ void log_zeile(bool write, FILE *f, char *recv_send_str, paket_header ph) {
                 ph.count_pakets_in_train,
                 ph.recv_data_rate,
 
-                ph.last_recv_train_id,
-                ph.last_recv_retransfer_train_id,
-                ph.last_recv_paket_id,
+                ph.first_recv_train_id,
+                ph.first_recv_retransfer_train_id,
+                ph.first_recv_paket_id,
+
+                timestr3,
+                ph.first_recv_recv_time.tv_sec,
+                ph.first_recv_recv_time.tv_nsec,
 
                 ph.last_recv_paket_bytes,
-
-                ph.timeout_time_tv_sec,
-                ph.timeout_time_tv_usec,
 
                 timestr1,
                 timestr2,
@@ -190,12 +194,15 @@ void log_zeile2(bool write, FILE *f, char *recv_send_str, paket_header ph) {
     const uint timestr_size = 30;
     char timestr1[timestr_size];
     char timestr2[timestr_size];
+    char timestr3[timestr_size];
 
     if (write) {
         timespec2str(timestr1, timestr_size, &ph.recv_time);
         timespec2str(timestr2, timestr_size, &ph.send_time);
+        timespec2str(timestr3, timestr_size, &ph.first_recv_recv_time);
 
-        fprintf(f, "%s;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%s;%s;%ld;%ld;%ld;%ld;%f;%d;%d;%d;\n",
+
+        fprintf(f, "%s;%d;%d;%d;%d;%d;%d;%d;%d;%s;%ld;%ld;%d;%s;%s;%ld;%ld;%ld;%ld;%f;%d;%d;%d;\n",
                 //printf("%s;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%s;%s;%ld;%ld;%ld;%ld;%f;%d;%d;%d;\n",
                 recv_send_str,
                 ph.train_id,
@@ -204,14 +211,15 @@ void log_zeile2(bool write, FILE *f, char *recv_send_str, paket_header ph) {
                 ph.count_pakets_in_train,
                 ph.recv_data_rate,
 
-                ph.last_recv_train_id,
-                ph.last_recv_retransfer_train_id,
-                ph.last_recv_paket_id,
+                ph.first_recv_train_id,
+                ph.first_recv_retransfer_train_id,
+                ph.first_recv_paket_id,
+
+                timestr3,
+                ph.first_recv_recv_time.tv_sec,
+                ph.first_recv_recv_time.tv_nsec,
 
                 ph.last_recv_paket_bytes,
-
-                ph.timeout_time_tv_sec,
-                ph.timeout_time_tv_usec,
 
                 timestr1,
                 timestr2,
