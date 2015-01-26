@@ -1,7 +1,6 @@
 
 // save: 21.09.2014 18:45
 
-
 #include <iostream>
 
 #include <sys/types.h>
@@ -58,7 +57,7 @@ bool istInDateiListe(char *datei) {
 
 char firstlines[] = "train_id;retransfer_train_id;paket_id;count_pakets_in_train;recv_data_rate;first_recv_train_id;first_recv_retransfer_train_id;first_recv_paket_id;first_recv_recv_time;last_recv_paket_bytes;timeout_time_tv_sec;timeout_time_tv_usec;recv_time;send_time;rtt\n\n\n";
 
-char firstlines2[] = "type;train_id;retransfer_train_id;paket_id;count_pakets_in_train;recv_data_rate;first_recv_train_id;first_recv_retransfer_train_id;first_recv_paket_id;first_recv_recv_time;first_recv_sec;first_recv_nsec;last_recv_paket_bytes;timeout_time_tv_sec;timeout_time_tv_usec;recv_time;send_time;recv_time_sec;recv_time_nsec;send_time_sec;send_time_nsec;rtt;mess_paket_size;datarate_train;datarate_paket\n";
+char firstlines2[] = "type;train_id;retransfer_train_id;paket_id;count_pakets_in_train;recv_data_rate;first_recv_train_id;first_recv_retransfer_train_id;first_recv_paket_id;first_recv_recv_time;first_recv_sec;first_recv_nsec;last_recv_paket_bytes;recv_time;send_time;recv_time_sec;recv_time_nsec;send_time_sec;send_time_nsec;send_recv_ms;timeout_time_tv_sec;timeout_time_tv_usec;recv_blocked;rtt;mess_paket_size;datarate_train_bit;datarate_paket_bit\n";
 
 timespec timespec_diff_timespec(timespec *start, timespec *end) {
     timespec temp;
@@ -103,7 +102,7 @@ void log_zeile(bool write, FILE *f, char *recv_send_str, paket_header ph) {
     char timestr2[timestr_size];
     char timestr3[timestr_size];
 
-    if (ph.train_id == 13) {
+    if (ph.train_id == 3) {
         ph.train_id++;
         ph.train_id--;
     }
@@ -148,36 +147,57 @@ void log_zeile(bool write, FILE *f, char *recv_send_str, paket_header ph) {
         timespec2str(timestr2, timestr_size, &ph.send_time);
         timespec2str(timestr3, timestr_size, &ph.first_recv_recv_time);
 
-
-        fprintf(f, "%s;%d;%d;%d;%d;%d;%d;%d;%d;%s;%ld;%ld;%d;%s;%s;%ld;%ld;%ld;%ld;%f;%d;%d;%d;\n",
-                //printf("%s;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%s;%s;%ld;%ld;%ld;%ld;%f;%d;%d;%d;\n",
+        fprintf(f, "%s;%d;%d;%d;%d;%d;",
                 recv_send_str,
                 ph.train_id,
                 ph.retransfer_train_id,
                 ph.paket_id,
                 ph.count_pakets_in_train,
-                ph.recv_data_rate,
+                ph.recv_data_rate);
 
+        fprintf(f, "%d;%d;%d;",
                 ph.first_recv_train_id,
                 ph.first_recv_retransfer_train_id,
-                ph.first_recv_paket_id,
+                ph.first_recv_paket_id);
 
+        fprintf(f, "%s;%ld;%ld;",
                 timestr3,
                 ph.first_recv_recv_time.tv_sec,
-                ph.first_recv_recv_time.tv_nsec,
+                ph.first_recv_recv_time.tv_nsec);
 
-                ph.last_recv_paket_bytes,
+        fprintf(f, "%d;",
+                ph.last_recv_paket_bytes);
 
+        fprintf(f, "%s;%s;",
                 timestr1,
-                timestr2,
+                timestr2);
 
+        fprintf(f, "%ld;%ld;%ld;%ld;",
                 ph.recv_time.tv_sec,
                 ph.recv_time.tv_nsec,
                 ph.send_time.tv_sec,
-                ph.send_time.tv_nsec,
+                ph.send_time.tv_nsec);
 
-                ph.rtt,
+        if (recv_str == recv_send_str) {
+            double d = timespec_diff_double(&ph.send_time, &ph.recv_time);
 
+            d = d * 1000.0;
+
+            fprintf(f, "%f;", d);
+        } else {
+            fprintf(f, ";");
+        }
+
+
+        fprintf(f, "%d;%d;%s;",
+                ph.timeout_time_tv_sec,
+                ph.timeout_time_tv_usec,
+                ph.recv_blocked ? "true" : "false");
+
+        fprintf(f, "%f;",
+                ph.rtt);
+
+        fprintf(f, "%d;%d;%d;\n",
                 ph.mess_paket_size,
                 datarate_train,
                 datarate_paket
@@ -197,40 +217,61 @@ void log_zeile2(bool write, FILE *f, char *recv_send_str, paket_header ph) {
     char timestr3[timestr_size];
 
     if (write) {
+
         timespec2str(timestr1, timestr_size, &ph.recv_time);
         timespec2str(timestr2, timestr_size, &ph.send_time);
         timespec2str(timestr3, timestr_size, &ph.first_recv_recv_time);
 
-
-        fprintf(f, "%s;%d;%d;%d;%d;%d;%d;%d;%d;%s;%ld;%ld;%d;%s;%s;%ld;%ld;%ld;%ld;%f;%d;%d;%d;\n",
-                //printf("%s;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%s;%s;%ld;%ld;%ld;%ld;%f;%d;%d;%d;\n",
+        fprintf(f, "%s;%d;%d;%d;%d;%d;",
                 recv_send_str,
                 ph.train_id,
                 ph.retransfer_train_id,
                 ph.paket_id,
                 ph.count_pakets_in_train,
-                ph.recv_data_rate,
+                ph.recv_data_rate);
 
+        fprintf(f, "%d;%d;%d;",
                 ph.first_recv_train_id,
                 ph.first_recv_retransfer_train_id,
-                ph.first_recv_paket_id,
+                ph.first_recv_paket_id);
 
+        fprintf(f, "%s;%ld;%ld;",
                 timestr3,
                 ph.first_recv_recv_time.tv_sec,
-                ph.first_recv_recv_time.tv_nsec,
+                ph.first_recv_recv_time.tv_nsec);
 
-                ph.last_recv_paket_bytes,
+        fprintf(f, "%d;",
+                ph.last_recv_paket_bytes);
 
+        fprintf(f, "%s;%s;",
                 timestr1,
-                timestr2,
+                timestr2);
 
+        fprintf(f, "%ld;%ld;%ld;%ld;",
                 ph.recv_time.tv_sec,
                 ph.recv_time.tv_nsec,
                 ph.send_time.tv_sec,
-                ph.send_time.tv_nsec,
+                ph.send_time.tv_nsec);
 
-                ph.rtt,
+        if (recv_str == recv_send_str) {
+            double d = timespec_diff_double(&ph.send_time, &ph.recv_time);
 
+            d = d * 1000.0;
+
+            fprintf(f, "%f;", d);
+        } else {
+            fprintf(f, ";");
+        }
+
+        fprintf(f, "%d;%d;%s;",
+                ph.timeout_time_tv_sec,
+                ph.timeout_time_tv_usec,
+                ph.recv_blocked ? "true" : "false");
+
+        fprintf(f, "%f;",
+                ph.rtt);
+
+        fprintf(f, "%d;%d;%d;\n",
                 ph.mess_paket_size,
                 datarate_train,
                 datarate_paket
@@ -240,8 +281,8 @@ void log_zeile2(bool write, FILE *f, char *recv_send_str, paket_header ph) {
     }
 
 }
-// cvs Datei erstellen, mit allen paketen
 
+/* cvs Datei erstellen, mit allen paketen */
 void create_csv_datei(char* recvDatei, char* sendDatei, char* csvDatei) {
 
     int File_Deskriptor_send;
@@ -409,8 +450,7 @@ void create_csv_datei(char* recvDatei, char* sendDatei, char* csvDatei) {
     }
 }
 
-// cvs Datei erstellen (zusammenfassung), nur mit erstem und letztem Paket vom Train
-
+/* cvs Datei erstellen (zusammenfassung), nur mit erstem und letztem Paket vom Train */
 void create_csv_datei_zus(char* recvDatei, char* sendDatei, char* csvDatei) {
 
     int File_Deskriptor_send;
@@ -483,8 +523,8 @@ void create_csv_datei_zus(char* recvDatei, char* sendDatei, char* csvDatei) {
     struct paket_header last_ph;
     last_ph.train_id = -1;
     char *last_recv_send;
-    char last_recv[] = "recv";
-    char last_send[] = "send";
+    char *last_recv = recv_str;
+    char *last_send = send_str;
 
     while (ende == false) {
 
@@ -751,6 +791,132 @@ void create_csv_datei_zus(char* recvDatei, char* sendDatei, char* csvDatei) {
     }
 }
 
+void create_txt_datei_atc(char* bDatei, char* txtDatei) {
+    int File_Deskriptor_b;
+    int File_Deskriptor;
+
+    // O_WRONLY nur zum Schreiben oeffnen
+    // O_RDWR zum Lesen und Schreiben oeffnen
+    // O_RDONLY nur zum Lesen oeffnen
+    // O_CREAT Falls die Datei nicht existiert, wird sie neu angelegt. Falls die Datei existiert, ist O_CREAT ohne Wirkung.
+    // O_APPEND Datei oeffnen zum Schreiben am Ende
+    // O_EXCL O_EXCL kombiniert mit O_CREAT bedeutet, dass die Datei nicht geoeffnet werden kann, wenn sie bereits existiert und open() den Wert 1 zurueckliefert (1 == Fehler).
+    // O_TRUNC Eine Datei, die zum Schreiben geoeffnet wird, wird geleert. Darauffolgendes Schreiben bewirkt erneutes Beschreiben der Datei von Anfang an. Die Attribute der Datei bleiben erhalten.
+    if ((File_Deskriptor_b = open(bDatei, O_RDONLY)) == -1) {
+        printf("ERROR:\n  Fehler beim Oeffnen / Erstellen der Datei \"%s\" \n(%s)\n ", bDatei, strerror(errno));
+        fflush(stdout);
+        //        exit(EXIT_FAILURE);
+    }
+
+    char firstlines[] = "atc Data \n\n";
+    int firstlines_len = strlen(firstlines);
+
+    int buf_size = strlen(firstlines);
+    char buf[buf_size];
+    int readed = read(File_Deskriptor_b, buf, buf_size);
+    if (0 != strncmp(firstlines, buf, buf_size)) {
+        printf("ERROR:\n  firstlines von der Datei \"%s\" \n(%s)\n ", bDatei, strerror(errno));
+        printf("\n %s \n %s \n", firstlines, buf);
+        fflush(stdout);
+        exit(EXIT_FAILURE);
+    }
+
+    if ((File_Deskriptor = open(txtDatei, O_WRONLY | O_CREAT | O_TRUNC, S_IRWXU | S_IRWXG, S_IRWXO)) == -1) {
+        printf("ERROR:\n  Fehler beim Oeffnen / Erstellen der Datei \"%s\" \n(%s)\n ", txtDatei, strerror(errno));
+        fflush(stdout);
+        exit(EXIT_FAILURE);
+    }
+
+    FILE *f = fdopen(File_Deskriptor, "w");
+    fprintf(f, "%s \n\n", txtDatei);
+
+    bool ende = false;
+
+    struct timespec time_write;
+    struct timespec time_read_start;
+    struct timespec time_read_ende;
+    int time_len = sizeof (timespec);
+    char caw[10240];
+    char car[10240];
+    const uint timestr_size = 30;
+    char time_str_write[timestr_size];
+    char time_str_start[timestr_size];
+    char time_str_ende[timestr_size];
+    double timedif1;
+    double timedif2;
+    double timedif3;
+
+
+    //    FILE *fb = fdopen(File_Deskriptor_b, "r");
+
+    while (ende == false) {
+
+        readed = read(File_Deskriptor_b, &time_write, time_len);
+
+        if (readed == 0) {
+            ende = true;
+        } else {
+            //            fb = fdopen(File_Deskriptor_b, "r");
+
+            timespec2str(time_str_write, timestr_size, &time_write);
+
+            read(File_Deskriptor_b, &time_read_start, time_len);
+            timespec2str(time_str_start, timestr_size, &time_read_start);
+
+            read(File_Deskriptor_b, &time_read_ende, time_len);
+            timespec2str(time_str_ende, timestr_size, &time_read_ende);
+
+            char c;
+            read(File_Deskriptor_b, &c, 1);
+            int i = 0;
+            caw[i] = c;
+            i++;
+
+            while (c != 0) {
+                read(File_Deskriptor_b, &c, 1);
+                caw[i] = c;
+                i++;
+            }
+            caw[i] = 0;
+
+            //            printf("%s\n", caw);
+
+            int cout_read;
+            int int_size = sizeof (int);
+
+            read(File_Deskriptor_b, &cout_read, int_size);
+
+            read(File_Deskriptor_b, &c, 1);
+            i = 0;
+            car[i] = c;
+            i++;
+
+            while (c != 0) {
+
+                read(File_Deskriptor_b, &c, 1);
+                car[i] = c;
+                i++;
+            }
+            car[i] = 0;
+
+            timedif1 = timespec_diff_double(&time_write, &time_read_start);
+            timedif1 = timedif1 * (double) 1000;
+            timedif2 = timespec_diff_double(&time_read_start, &time_read_ende);
+            timedif2 = timedif2 * (double) 1000;
+            timedif3 = timespec_diff_double(&time_write, &time_read_ende);
+            timedif3 = timedif3 * (double) 1000;
+
+
+            fprintf(f, "%s \n", time_str_write);
+            fprintf(f, "write: %s \n", caw);
+            fprintf(f, "%s | %f ms\n", time_str_start, timedif1);
+            fprintf(f, "read: %d \n%s \n", cout_read, car);
+            fprintf(f, "%s | %f ms | %f ms\n", time_str_ende, timedif2, timedif3);
+            fprintf(f, "\n###############################################################\n");
+        }
+    }
+}
+
 int main(int argc, char**argv) {
 
     DIR *dir;
@@ -923,6 +1089,64 @@ int main(int argc, char**argv) {
 
     }
 
+
+    /* Lesezeiger wieder schließen */
+    if (closedir(dir) == -1) {
+        printf("Fehler beim Schließen von %s\n", argv[1]);
+    }
+
+    if ((dir = opendir(pfad)) == NULL) {
+        fprintf(stderr, "Fehler bei opendir ...\n");
+        return EXIT_FAILURE;
+    }
+    /* Dateien parsen zus*/
+    while ((dirzeiger = readdir(dir)) != NULL) {
+        char *DateiName = (*dirzeiger).d_name;
+
+        int DateiName_len = strlen(DateiName);
+        char DateiNameEnde[] = "_cl_atc.b";
+        int DateiNameEnde_len = strlen(DateiNameEnde);
+
+        if ((DateiNameEnde_len + 5) < DateiName_len) {
+            if (0 == strcmp(DateiName + DateiName_len - DateiNameEnde_len, DateiNameEnde)) {
+
+                char DateiName3[1024];
+                strncpy(DateiName3, DateiName, DateiName_len - DateiNameEnde_len);
+
+                char DateiNameEnde3[] = "_cl_atc.txt";
+                int DateiNameEnde3_len = strlen(DateiNameEnde3);
+
+                strncpy(DateiName3 + DateiName_len - DateiNameEnde_len, DateiNameEnde3, DateiNameEnde3_len);
+
+                DateiName3[DateiName_len - DateiNameEnde_len + DateiNameEnde3_len] = 0;
+
+                if (istInDateiListe(DateiName3) == false) {
+                    char d[pfad_len + DateiName_len + DateiNameEnde_len];
+                    char d3[pfad_len + DateiName_len + DateiNameEnde3_len];
+
+                    d[0] = 0;
+                    d3[0] = 0;
+
+                    char *p = d;
+                    char *p3 = d3;
+
+                    strncat(d, pfad, pfad_len);
+                    strncat(d, DateiName, DateiName_len - DateiNameEnde_len);
+                    strncat(d, DateiNameEnde, DateiNameEnde_len);
+
+                    strncat(d3, pfad, pfad_len);
+                    strncat(d3, DateiName, DateiName_len - DateiNameEnde_len);
+                    strncat(d3, DateiNameEnde3, DateiNameEnde3_len);
+
+                    create_txt_datei_atc(d, d3);
+
+                    printf("Datei erstellt: %s \n", d3);
+                }
+            }
+        }
+
+    }
+
     /* Lesezeiger wieder schließen */
     if (closedir(dir) == -1) {
         printf("Fehler beim Schließen von %s\n", argv[1]);
@@ -932,3 +1156,4 @@ int main(int argc, char**argv) {
 
 
 }
+
